@@ -27,9 +27,9 @@ GetParent = ctypes.windll.user32.GetParent
 # ─────────────────────────────────────────────
 # 설정
 TRANSPARENT_COLOR = "black"
-BIG_FONT = ("Pretendard Semibold", 64)
-TEST_FONT = ("Pretendard", 64 // 3)
-SMALL_FONT = ("나눔고딕코딩", 64 // 3)
+BIG_FONT = "Pretendard Semibold"
+SMALL_FONT_0 = "Pretendard"
+SMALL_FONT_1 = "나눔고딕코딩"
 CONFIG_PATH = "config.json"
 DEFAULT_CONFIG = {
     "x": 100,
@@ -269,7 +269,7 @@ frame = tk.Frame(root, bg=TRANSPARENT_COLOR)
 frame.pack()
 
 # 왼쪽: 상태 표시 (크게)
-label_status = tk.Label(frame, text="대기", font=BIG_FONT, fg="red", bg=TRANSPARENT_COLOR)
+label_status = tk.Label(frame, text="대기", font=(BIG_FONT, label_font_size), fg="red", bg=TRANSPARENT_COLOR)
 label_status.pack(side="left", anchor="center", padx=10)
 
 info_frame0 = tk.Frame(frame, bg=TRANSPARENT_COLOR)
@@ -279,19 +279,19 @@ info_frame0.pack(side="left", anchor="w")
 info_frame1 = tk.Frame(info_frame0, bg=TRANSPARENT_COLOR)
 info_frame1.pack(anchor="w", pady=(0,0))
 
-label_info_01 = tk.Label(info_frame1, text="남은시간", font=TEST_FONT, fg="white", bg=TRANSPARENT_COLOR)
+label_info_01 = tk.Label(info_frame1, text="남은시간", font=(SMALL_FONT_0, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
 label_info_01.pack(side="left", anchor="w")#, pady=(11,0))
 
-label_info_1 = tk.Label(info_frame1, text="", font=SMALL_FONT, fg="white", bg=TRANSPARENT_COLOR)
+label_info_1 = tk.Label(info_frame1, text="", font=(SMALL_FONT_1, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
 label_info_1.pack(side="left", anchor="w")#, pady=(11,0))
 
 info_frame2 = tk.Frame(info_frame0, bg=TRANSPARENT_COLOR)
 info_frame2.pack(anchor="w", pady=(0,0))
 
-label_info_02 = tk.Label(info_frame2, text="퇴근시각", font=TEST_FONT, fg="white", bg=TRANSPARENT_COLOR)
+label_info_02 = tk.Label(info_frame2, text="퇴근시각", font=(SMALL_FONT_0, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
 label_info_02.pack(side="left", anchor="e")#, pady=(0,0))
 
-label_info_2 = tk.Label(info_frame2, text="", font=SMALL_FONT, fg="white", bg=TRANSPARENT_COLOR)
+label_info_2 = tk.Label(info_frame2, text="", font=(SMALL_FONT_1, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
 label_info_2.pack(side="left", anchor="w")#, pady=(0,0))
 # ─────────────────────────────────────────────
 # 창 이동
@@ -326,11 +326,11 @@ def key_event(event):
         set_click_through(locked)
 
     # 갱신
-    label_status.config(font=("Pretendard SemiBold", label_font_size))
-    label_info_01.config(font=("Pretendard", label_font_size // 3))
-    label_info_02.config(font=("Pretendard", label_font_size // 3))
-    label_info_1.config(font=("Pretendard", label_font_size // 3))
-    label_info_2.config(font=("Pretendard", label_font_size // 3))
+    label_status.config(font=(BIG_FONT, label_font_size))
+    label_info_01.config(font=(SMALL_FONT_0, label_font_size // 3))
+    label_info_02.config(font=(SMALL_FONT_0, label_font_size // 3))
+    label_info_1.config(font=(SMALL_FONT_1, label_font_size // 3))
+    label_info_2.config(font=(SMALL_FONT_1, label_font_size // 3))
     set_opacity(label_opacity)
     save_config()
 
