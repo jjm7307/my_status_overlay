@@ -141,7 +141,9 @@ def get_status_and_times():
     else: # 이거 뜨면 진짜 뭐지 찾아봐야함
         status = "뭐지"
 
-    if today_time is None:
+    if (remain_time <= today_time):
+        real_time = timedelta(hours=0)
+    elif today_time is None:
         real_time = remain_time
     else:
         real_time = remain_time - today_time
