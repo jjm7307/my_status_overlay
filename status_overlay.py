@@ -28,8 +28,8 @@ GetParent = ctypes.windll.user32.GetParent
 # 설정
 TRANSPARENT_COLOR = "black"
 BIG_FONT = ("Pretendard Semibold", 64)
-TEST_FONT = ("Pretendard", 24)
-SMALL_FONT = ("나눔고딕코딩", 24)
+TEST_FONT = ("Pretendard", 64 // 3)
+SMALL_FONT = ("나눔고딕코딩", 64 // 3)
 CONFIG_PATH = "config.json"
 DEFAULT_CONFIG = {
     "x": 100,
@@ -325,6 +325,8 @@ def key_event(event):
 
     # 갱신
     label_status.config(font=("Pretendard SemiBold", label_font_size))
+    label_info_01.config(font=("Pretendard", label_font_size // 3))
+    label_info_02.config(font=("Pretendard", label_font_size // 3))
     label_info_1.config(font=("Pretendard", label_font_size // 3))
     label_info_2.config(font=("Pretendard", label_font_size // 3))
     set_opacity(label_opacity)
