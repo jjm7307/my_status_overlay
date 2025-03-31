@@ -10,6 +10,17 @@ from PIL import Image, ImageDraw
 import re
 from datetime import datetime, timedelta
 
+try:
+    import ctypes
+    ES_CONTINUOUS = 0x80000000
+    ES_SYSTEM_REQUIRED = 0x00000001
+    ES_AWAYMODE_REQUIRED = 0x00000040
+    ctypes.windll.kernel32.SetThreadExecutionState(
+        ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED
+    )
+except:
+    pass
+
 # ─────────────────────────────────────────────
 # Windows API 상수
 GWL_EXSTYLE = -20
@@ -136,7 +147,7 @@ def get_status_and_times():
         return status, label_1, label_2
     elif (start_time is None) and (finish_time is None): # 자정을 넘겼거나 아직 출근 안함
         status = "퇴근"
-        label_2 = "출근이나 해"
+        label_2 = ""
         return status, label_1, label_2
     else: # 이거 뜨면 진짜 뭐지 찾아봐야함
         status = "뭐지"
@@ -166,11 +177,11 @@ def get_status_and_times():
     end_h, end_m = split_timedelta(end_time)
 
 
-    if remain_time > timedelta(hours=12):
-        label_2 = "오늘 못 채워"
+    if (remain_time > timedelta(hours=12)) or (end_time > timedelta(hours=24)):
+        label_2 = ""
     else:
         if start_time is None:
-            label_2 = "출근이나 해"
+            label_2 = ""
         else:
             label_2 = f"{end_h:02d}:{end_m:02d}"
 
@@ -230,9 +241,10 @@ def toggle_details(icon=None, item=None):
 
     save_config()
 def toggle_lock(icon=None, item=None):
-    global locked
+    global locked, label_opacity
     locked = not locked
     set_click_through(locked)
+    set_opacity(label_opacity)
     save_config()
 
 def exit_app(icon, item):
@@ -313,17 +325,17 @@ label_status.bind("<B1-Motion>", do_move)
 # 키 입력 처리
 def key_event(event):
     global label_font_size, label_opacity, locked
-    if event.keysym == "plus" or event.keysym == "KP_Add":
+    if event.keysym in ("plus", "equal", "KP_Add"):
         label_font_size += 4
-    elif event.keysym == "minus" or event.keysym == "KP_Subtract":
+    elif event.keysym in ("minus", "underscore", "KP_Subtract"):
         label_font_size = max(8, label_font_size - 4)
     elif event.keysym == "Up":
         label_opacity = min(255, label_opacity + 10)
     elif event.keysym == "Down":
-        label_opacity = max(50, label_opacity - 10)
-    elif event.keysym.lower() == "l":
-        locked = not locked
-        set_click_through(locked)
+        label_opacity = max(55, label_opacity - 10)
+    # elif event.keysym.lower() == "l":
+    #     locked = not locked
+    #     set_click_through(locked)
 
     # 갱신
     label_status.config(font=(BIG_FONT, label_font_size))

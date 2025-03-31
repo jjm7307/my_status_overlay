@@ -1,0 +1,49 @@
+{
+  "local": {
+    "InstallDate": 1743397278704,
+    "clientId": "30b7382b-6692-4de2-a249-f39c82d17898",
+    "domain_config": {},
+    "format_update_date": "March 31, 2025",
+    "last-heartbeat": 1743400886312,
+    "options": {
+      "asrefresh": true,
+      "asrestart": true,
+      "asurl": "krp.kaist.ac.kr/*",
+      "autostart": true,
+      "clickInteraction": false,
+      "default_time": 900,
+      "defaultpgtxt": "",
+      "domains": {},
+      "hotkeys": false,
+      "ignoreInputField": true,
+      "interactions": false,
+      "keyboardInteraction": false,
+      "pdcheck": false,
+      "pdurl": "",
+      "pm_sound_til": "sound",
+      "pm_sound_timeout": 5,
+      "pmemail": "",
+      "pmpattern": "A",
+      "random_time": false,
+      "restartDefault": false,
+      "rpt": false,
+      "rpttext": "",
+      "scrollToKeyword": true,
+      "sound": "3",
+      "soundurl": "",
+      "soundvolume": 1,
+      "tabAlertSection": true,
+      "tabAlertTime": 1,
+      "timercheck": true,
+      "urlChangeFollow": 1,
+      "visualPosition": "1",
+      "visualtimer": false,
+      "windowFocus": false
+    },
+    "version": 8
+  },
+  "sync": {},
+  "storage": {
+    "welcome": "1"
+  }
+}
