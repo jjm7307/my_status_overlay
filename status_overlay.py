@@ -10,17 +10,6 @@ from PIL import Image, ImageDraw
 import re
 from datetime import datetime, timedelta
 
-try:
-    import ctypes
-    ES_CONTINUOUS = 0x80000000
-    ES_SYSTEM_REQUIRED = 0x00000001
-    ES_AWAYMODE_REQUIRED = 0x00000040
-    ctypes.windll.kernel32.SetThreadExecutionState(
-        ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED
-    )
-except:
-    pass
-
 # ─────────────────────────────────────────────
 # Windows API 상수
 GWL_EXSTYLE = -20
@@ -50,10 +39,11 @@ DEFAULT_CONFIG = {
     "locked": False,
     "details_visible": True
 }
+LUNCH_TIME = timedelta(hours=12)
+DINNER_TIME = timedelta(hours=18)
+ONE_HOURS = timedelta(hours=1)
+PREV_TIME = timedelta(hours=40)
 details_visible = True
-lunch_time = timedelta(hours=12)
-dinner_time = timedelta(hours=18)
-one_hours = timedelta(hours=1)
 # ─────────────────────────────────────────────
 # 설정 불러오기 / 저장
 def load_config():
@@ -91,7 +81,7 @@ def parse_colon_time(s: str) -> timedelta:
     return timedelta(hours=h, minutes=m)
 
 def parse_korean_time(s: str) -> timedelta:
-    # "06시 54분분" → timedelta
+    # "06시 54분" → timedelta
     hour_match = re.search(r'(\d+)\s*시', s)
     minute_match = re.search(r'(\d+)\s*분', s)
 
@@ -138,6 +128,14 @@ def get_status_and_times():
     remain_h, remain_m = split_timedelta(remain_time)
     label_1 = f"{remain_h:02d}:{remain_m:02d}"
 
+    if (remain_time <= today_time):
+        real_time = timedelta(hours=0)
+    elif today_time is None:
+        real_time = remain_time
+    else:
+        real_time = remain_time - today_time
+
+
     if (start_time is not None) and (finish_time is None): # 출근
         status = "출근"
     elif (start_time is not None) and (finish_time is not None): # 자정 넘기기전에 퇴근한 경우
@@ -146,33 +144,35 @@ def get_status_and_times():
         label_2 = f"{finish_h:02d}:{finish_m:02d}"
         return status, label_1, label_2
     elif (start_time is None) and (finish_time is None): # 자정을 넘겼거나 아직 출근 안함
-        status = "퇴근"
+        if PREV_TIME > (real_time + timedelta(hours=1)):
+            status = "출근"
+        else:
+            status = "퇴근"
         label_2 = ""
         return status, label_1, label_2
     else: # 이거 뜨면 진짜 뭐지 찾아봐야함
         status = "뭐지"
 
-    if (remain_time <= today_time):
-        real_time = timedelta(hours=0)
-    elif today_time is None:
-        real_time = remain_time
+    if real_time == timedelta(hours=0):
+        PREV_TIME = timedelta(hours=40)
     else:
-        real_time = remain_time - today_time
+        PREV_TIME = real_time
+
 
     real_h, real_m = split_timedelta(real_time)
     label_1 = f"{real_h:02d}:{real_m:02d}"
 
     end_time = current_time + real_time
 
-    if (end_time >= lunch_time) and (current_time < lunch_time):
-        end_time += one_hours
-    elif (end_time >= lunch_time) and (current_time > lunch_time) and (current_time < (lunch_time + one_hours)):
-        end_time += (lunch_time + one_hours - current_time)
+    if (end_time >= LUNCH_TIME) and (current_time < LUNCH_TIME):
+        end_time += ONE_HOURS
+    elif (end_time >= LUNCH_TIME) and (current_time > LUNCH_TIME) and (current_time < (LUNCH_TIME + ONE_HOURS)):
+        end_time += (LUNCH_TIME + ONE_HOURS - current_time)
 
-    if (end_time >= dinner_time) and (current_time < dinner_time):
-        end_time += one_hours
-    elif (end_time >= dinner_time) and (current_time > dinner_time) and (current_time < (dinner_time + one_hours)):
-        end_time += (dinner_time + one_hours - current_time)
+    if (end_time >= DINNER_TIME) and (current_time < DINNER_TIME):
+        end_time += ONE_HOURS
+    elif (end_time >= DINNER_TIME) and (current_time > DINNER_TIME) and (current_time < (DINNER_TIME + ONE_HOURS)):
+        end_time += (DINNER_TIME + ONE_HOURS - current_time)
 
     end_h, end_m = split_timedelta(end_time)
 
@@ -185,7 +185,13 @@ def get_status_and_times():
         else:
             label_2 = f"{end_h:02d}:{end_m:02d}"
 
-    os.remove(latest)
+    
+    files = glob.glob("../page_content_*.json")
+    for file in files:
+        try:
+            os.remove(file)
+        except Exception as e:
+            pass
     return status, label_1, label_2
 
 # ─────────────────────────────────────────────
