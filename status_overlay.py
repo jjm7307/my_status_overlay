@@ -185,13 +185,6 @@ def get_status_and_times():
         else:
             label_2 = f"{end_h:02d}:{end_m:02d}"
 
-    
-    files = glob.glob("../page_content_*.json")
-    for file in files:
-        try:
-            os.remove(file)
-        except Exception as e:
-            pass
     return status, label_1, label_2
 
 # ─────────────────────────────────────────────
@@ -206,6 +199,13 @@ def update_labels():
             label_status.config(text=status)
             label_info_1.config(text=remaining if remaining else "")
             label_info_2.config(text=target_time if target_time else "")
+            
+            files = glob.glob("../page_content_*.json")
+            for file in files:
+                try:
+                    os.remove(file)
+                except Exception as e:
+                    pass
         except:
             pass
         time.sleep(60)
