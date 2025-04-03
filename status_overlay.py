@@ -9,6 +9,9 @@ from pystray import Icon, Menu, MenuItem
 from PIL import Image, ImageDraw
 import re
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+import sys
+import pytz
 
 # ─────────────────────────────────────────────
 # Windows API 상수
@@ -26,6 +29,16 @@ GetParent = ctypes.windll.user32.GetParent
 
 # ─────────────────────────────────────────────
 # 설정
+if getattr(sys, 'frozen', False):  # pyinstaller로 패킹된 상태인지 확인
+    base_dir = os.path.dirname(sys.executable)
+else:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+json_dir = base_dir
+FILE_PATH = os.path.join(json_dir, "../page_content_*.json")
+
+# FILE_PATH = "../page_content_*.json"
+# FILE_PATH = "../test_content.json"
 TRANSPARENT_COLOR = "black"
 BIG_FONT = "Pretendard Semibold"
 SMALL_FONT_0 = "Pretendard"
@@ -41,8 +54,8 @@ DEFAULT_CONFIG = {
 }
 LUNCH_TIME = timedelta(hours=12)
 DINNER_TIME = timedelta(hours=18)
+ZERO_HOURS = timedelta(hours=0)
 ONE_HOURS = timedelta(hours=1)
-PREV_TIME = timedelta(hours=40)
 details_visible = True
 # ─────────────────────────────────────────────
 # 설정 불러오기 / 저장
@@ -96,118 +109,136 @@ def split_timedelta(td: timedelta):
 # ─────────────────────────────────────────────
 # 상태 판단 + 정보 추출
 def get_status_and_times():
-    latest = sorted(glob.glob("../page_content_*.json"))[-1]
+    now_korea = datetime.now(pytz.timezone("Asia/Seoul"))
+    weekday = now_korea.strftime("%A")  # 예: 'Monday', 'Tuesday'
+    today = now_korea.date().day
+    yesterday = (now_korea.date() - timedelta(days=1)).day
+    if (weekday == "Sunday"):
+        return "", "", "", False
+
+    latest = sorted(glob.glob(FILE_PATH))[-1]
     with open(latest, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    current_time = data.get("saved_at")
-    current_time= parse_korean_time(current_time)
+    now = datetime.now()
+    current_time = timedelta(hours=now.hour, minutes=now.minute)
 
     content = data.get("content", "")
     contents = content.split("\n")
 
-    remain_time = None
-    today_time = None
-    start_time = None
-    finish_time = None
+    remain_time     = None # 전날까지 채우고 남은 시간
+    today_time      = None # 오늘 채운 시간
+    start_time      = None # 오늘 출근 시간
+    finish_time     = None # 오늘 퇴근 시간
+    real_time       = None # 전날 채우고 남은 시간 - 오늘 채운 시간
+    end_time        = None # 오늘 출근 시간 + 남은 채워야하는 시간
+    prev_work       = False # 전날 출근함?
 
     status = "출근"
     label_1 = ""
     label_2 = ""
+    overlay = True
 
+    day_start = 0
+    day_end = 0
     for idx, item in enumerate(contents):
         if "금주 잔여 복무시간" in item:
             remain_time = parse_duration(contents[idx+1])
         elif "출근시간" in item:
             if "예상 누적"  in contents[idx+1]:
                 start_time = parse_colon_time(contents[idx+2])
-                today_time = parse_colon_time(contents[idx+1].split(" ")[-1])
+                today_time = current_time - start_time#parse_colon_time(contents[idx+1].split(" ")[-1])
         elif "퇴근시간" in item:
             if not "스케줄" in contents[idx+1]:
                 finish_time = parse_colon_time(contents[idx+1])
-                
-    remain_h, remain_m = split_timedelta(remain_time)
-    label_1 = f"{remain_h:02d}:{remain_m:02d}"
+        elif "월\t화\t수\t목\t금" in item:
+            day_start = idx
+        elif "상신 목록" in item:
+            day_end = idx
+    
+    for idx in range(day_start, day_end):
+        item = contents[idx]
+        if (f"{yesterday:02d}" == item):
+            if (len(contents[idx+2]) == 2):
+                prev_work = False
+            else:
+                prev_work = True
 
-    if (remain_time <= today_time):
-        real_time = timedelta(hours=0)
-    elif today_time is None:
+    if today_time is None:
         real_time = remain_time
     else:
-        real_time = remain_time - today_time
+        if (remain_time < today_time):
+            real_time = ZERO_HOURS
+        else:
+            real_time = remain_time - today_time
+        end_time = start_time + remain_time
 
+        if (end_time >= LUNCH_TIME) and (current_time < LUNCH_TIME):
+            end_time += ONE_HOURS
+        elif (end_time >= LUNCH_TIME) and (current_time > LUNCH_TIME) and (current_time < (LUNCH_TIME + ONE_HOURS)):
+            end_time += (LUNCH_TIME + ONE_HOURS - current_time)
+        if (end_time >= DINNER_TIME) and (current_time < DINNER_TIME):
+            end_time += ONE_HOURS
+        elif (end_time >= DINNER_TIME) and (current_time > DINNER_TIME) and (current_time < (DINNER_TIME + ONE_HOURS)):
+            end_time += (DINNER_TIME + ONE_HOURS - current_time)
 
-    if (start_time is not None) and (finish_time is None): # 출근
-        status = "출근"
-    elif (start_time is not None) and (finish_time is not None): # 자정 넘기기전에 퇴근한 경우
-        status = "퇴근"
+    if finish_time is not None: # 퇴근함
         finish_h, finish_m = split_timedelta(finish_time)
         label_2 = f"{finish_h:02d}:{finish_m:02d}"
-        return status, label_1, label_2
+    # 남은 시간이 12시간 이상이거나 / 다 채울 수 있는 퇴근 시간이 자정을 넘기거나 / 아직 출근을 안함
+    elif (remain_time > timedelta(hours=12)) or (end_time > timedelta(hours=24)) or (start_time is None):
+        label_2 = ""
+    else:
+        end_h, end_m = split_timedelta(end_time)
+        label_2 = f"{end_h:02d}:{end_m:02d}"
+    
+    if (start_time is not None) and (finish_time is None): # 출근
+        status = "출근"
+        real_h, real_m = split_timedelta(real_time)
+        label_1 = f"{real_h:02d}:{real_m:02d}"
+    elif (start_time is not None) and (finish_time is not None): # 자정 넘기기전에 퇴근한 경우
+        status = "퇴근"
+        remain_h, remain_m = split_timedelta(remain_time)
+        label_1 = f"{remain_h:02d}:{remain_m:02d}"
     elif (start_time is None) and (finish_time is None): # 자정을 넘겼거나 아직 출근 안함
-        if PREV_TIME > (real_time + timedelta(hours=1)):
+        if (weekday != "Monday") and (prev_work == False): # 월요일도 아닌데 전날 아무 기록이 없음 > 자정을 넘긴 출근 상태
             status = "출근"
-        else:
-            status = "퇴근"
-        label_2 = ""
-        return status, label_1, label_2
-    else: # 이거 뜨면 진짜 뭐지 찾아봐야함
-        status = "뭐지"
-
-    if real_time == timedelta(hours=0):
-        PREV_TIME = timedelta(hours=40)
-    else:
-        PREV_TIME = real_time
-
-
-    real_h, real_m = split_timedelta(real_time)
-    label_1 = f"{real_h:02d}:{real_m:02d}"
-
-    end_time = current_time + real_time
-
-    if (end_time >= LUNCH_TIME) and (current_time < LUNCH_TIME):
-        end_time += ONE_HOURS
-    elif (end_time >= LUNCH_TIME) and (current_time > LUNCH_TIME) and (current_time < (LUNCH_TIME + ONE_HOURS)):
-        end_time += (LUNCH_TIME + ONE_HOURS - current_time)
-
-    if (end_time >= DINNER_TIME) and (current_time < DINNER_TIME):
-        end_time += ONE_HOURS
-    elif (end_time >= DINNER_TIME) and (current_time > DINNER_TIME) and (current_time < (DINNER_TIME + ONE_HOURS)):
-        end_time += (DINNER_TIME + ONE_HOURS - current_time)
-
-    end_h, end_m = split_timedelta(end_time)
-
-
-    if (remain_time > timedelta(hours=12)) or (end_time > timedelta(hours=24)):
-        label_2 = ""
-    else:
-        if start_time is None:
+            label_1 = ""
             label_2 = ""
         else:
-            label_2 = f"{end_h:02d}:{end_m:02d}"
+            status = "퇴근"
+    
+    if (real_time == ZERO_HOURS) and (status == "퇴근"):
+        overlay = False
 
-    return status, label_1, label_2
+    return status, label_1, label_2, overlay
 
 # ─────────────────────────────────────────────
 # UI 갱신
 def update_labels():
     while True:
         try:
-            latest = sorted(glob.glob("../page_content_*.json"))[-1]
-            with open(latest, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            status, remaining, target_time = get_status_and_times()
-            label_status.config(text=status)
-            label_info_1.config(text=remaining if remaining else "")
-            label_info_2.config(text=target_time if target_time else "")
+            status, remaining, target_time, overlay = get_status_and_times()
+            if overlay:
+                label_status.config(text=status)
+                label_info_1.config(text=remaining)
+                label_info_2.config(text=target_time)
+                label_info_01.config(text="잔여")
+                label_info_02.config(text="퇴근")
+            else:
+                label_status.config(text="")
+                label_info_1.config(text="")
+                label_info_2.config(text="")
+                label_info_01.config(text="")
+                label_info_02.config(text="")
             
-            files = glob.glob("../page_content_*.json")
+            files = glob.glob(FILE_PATH)
             for file in files:
                 try:
                     os.remove(file)
                 except Exception as e:
-                    pass
+                    time.sleep(0.1)
         except:
-            pass
+            time.sleep(0.1)
         time.sleep(60)
 
 # ─────────────────────────────────────────────
@@ -297,7 +328,7 @@ info_frame0.pack(side="left", anchor="w")
 info_frame1 = tk.Frame(info_frame0, bg=TRANSPARENT_COLOR)
 info_frame1.pack(anchor="w", pady=(0,0))
 
-label_info_01 = tk.Label(info_frame1, text="남은시간", font=(SMALL_FONT_0, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
+label_info_01 = tk.Label(info_frame1, text="잔여", font=(SMALL_FONT_0, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
 label_info_01.pack(side="left", anchor="w")#, pady=(11,0))
 
 label_info_1 = tk.Label(info_frame1, text="", font=(SMALL_FONT_1, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
@@ -306,7 +337,7 @@ label_info_1.pack(side="left", anchor="w")#, pady=(11,0))
 info_frame2 = tk.Frame(info_frame0, bg=TRANSPARENT_COLOR)
 info_frame2.pack(anchor="w", pady=(0,0))
 
-label_info_02 = tk.Label(info_frame2, text="퇴근시각", font=(SMALL_FONT_0, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
+label_info_02 = tk.Label(info_frame2, text="퇴근", font=(SMALL_FONT_0, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
 label_info_02.pack(side="left", anchor="e")#, pady=(0,0))
 
 label_info_2 = tk.Label(info_frame2, text="", font=(SMALL_FONT_1, label_font_size // 3), fg="white", bg=TRANSPARENT_COLOR)
@@ -357,6 +388,10 @@ root.focus_force()
 
 # ─────────────────────────────────────────────
 # 실행
+print("[실행 경로]", os.getcwd())
+print("[찾는 경로]", FILE_PATH)
+print("[존재하는 파일]", glob.glob(FILE_PATH))
+
 set_opacity(label_opacity)
 set_click_through(locked)
 setup_tray()
