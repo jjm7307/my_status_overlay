@@ -1,4 +1,5 @@
 # KRP 출근 상태 오버레이
+![image](https://github.com/user-attachments/assets/5e42b840-143d-4f01-8d44-e5f66af0d2c3)
 
 ## 프로그램 소개
 - 현재 출근 상태 및 잔여 복무시간을 모니터에 표기해주는 프로그램으로 3개로 나누어져서 구성됨
