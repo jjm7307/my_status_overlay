@@ -18,7 +18,7 @@
 1. `my_status_overlay_release.zip`의 압축을 풀어서 `Download` 폴더에 넣음
 2. `font` 폴더에 있는 폰트들 모두 설치
 3. `Chrome` > `Chrome 웹 스토어` > `Auto Refresh Plus | Page Monitor` 설치
-4. `설정 백업` > `가져오기` > `storage_data.arp`
+4. `Auto Refresh Plus | Page Monitor`의 `설정` > `설정 백업` > `가져오기` > `storage_data.arp`
 5. KRP 홈페이지 로그인
 6. 시간 간격 설정 (ex. 900초) 후에 시작 버튼 누르기
 7. `Chrome` > `확장 프로그램` > `확장 프로그램 관리` > `개발자 모드` ON > `압축해제된 확장 프로그램을 로드합니다` > `auto_save_extension` 선택
