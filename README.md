@@ -2,7 +2,7 @@
 
 ## 프로그램 소개
 - 현재 출근 상태 및 잔여 복무시간을 모니터에 표기해주는 프로그램으로 3개로 나누어져서 구성됨
-- `Auto Refresh Plus`
+- `Auto Refresh Plus | Page Monitor`
   -  Chrome 웹 스토어에서 설치 가능
   -  KRP 홈페이지를 주기적으로 새로고침하면서 로그아웃을 방지함
 - `Auto Save Page Content`
@@ -17,7 +17,7 @@
 ## 설치 방법
 1. `my_status_overlay_release.zip`의 압축을 풀어서 `Download` 폴더에 넣음
 2. `font` 폴더에 있는 폰트들 모두 설치
-3. `Chrome` > `Chrome 웹 스토어` > `Auto Refresh Plus` 설치
+3. `Chrome` > `Chrome 웹 스토어` > `Auto Refresh Plus | Page Monitor` 설치
 4. `설정 백업` > `가져오기` > `storage_data.arp`
 5. KRP 홈페이지 로그인
 6. 시간 간격 설정 (ex. 900초) 후에 시작 버튼 누르기
