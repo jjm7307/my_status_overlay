@@ -106,12 +106,20 @@ def split_timedelta(td: timedelta):
     total_minutes = int(td.total_seconds() // 60)
     return total_minutes // 60, total_minutes % 60
 
+def eating_time(td: timedelta) -> timedelta:
+    if (td >= LUNCH_TIME) and (td < LUNCH_TIME + ONE_HOURS):
+        td = LUNCH_TIME + ONE_HOURS
+    if (td >= DINNER_TIME) and (td < DINNER_TIME + ONE_HOURS):
+        td = DINNER_TIME + ONE_HOURS
+    return td
+
+
 # ─────────────────────────────────────────────
 # 상태 판단 + 정보 추출
 def get_status_and_times():
     now_korea = datetime.now(pytz.timezone("Asia/Seoul"))
     weekday = now_korea.strftime("%A")  # 예: 'Monday', 'Tuesday'
-    today = now_korea.date().day
+    # today = now_korea.date().day
     yesterday = (now_korea.date() - timedelta(days=1)).day
     if (weekday == "Sunday"):
         return "", "", "", False
@@ -121,6 +129,7 @@ def get_status_and_times():
         data = json.load(f)
     now = datetime.now()
     current_time = timedelta(hours=now.hour, minutes=now.minute)
+    current_time = eating_time(current_time)
 
     content = data.get("content", "")
     contents = content.split("\n")
@@ -146,7 +155,13 @@ def get_status_and_times():
         elif "출근시간" in item:
             if "예상 누적"  in contents[idx+1]:
                 start_time = parse_colon_time(contents[idx+2])
-                today_time = current_time - start_time#parse_colon_time(contents[idx+1].split(" ")[-1])
+                start_time = eating_time(start_time)
+                today_time = current_time - start_time # parse_colon_time(contents[idx+1].split(" ")[-1])
+                if (start_time <= LUNCH_TIME) and (current_time >= LUNCH_TIME + ONE_HOURS):
+                    today_time = today_time - ONE_HOURS
+                if (start_time <= DINNER_TIME) and (current_time >= DINNER_TIME + ONE_HOURS):
+                    today_time = today_time - ONE_HOURS
+
         elif "퇴근시간" in item:
             if not "스케줄" in contents[idx+1]:
                 finish_time = parse_colon_time(contents[idx+1])
@@ -154,7 +169,7 @@ def get_status_and_times():
             day_start = idx
         elif "상신 목록" in item:
             day_end = idx
-    
+
     for idx in range(day_start, day_end):
         item = contents[idx]
         if (f"{yesterday:02d}" == item):
@@ -172,14 +187,10 @@ def get_status_and_times():
             real_time = remain_time - today_time
         end_time = start_time + remain_time
 
-        if (end_time >= LUNCH_TIME) and (current_time < LUNCH_TIME):
+        if (end_time >= LUNCH_TIME) and (start_time < LUNCH_TIME):
             end_time += ONE_HOURS
-        elif (end_time >= LUNCH_TIME) and (current_time > LUNCH_TIME) and (current_time < (LUNCH_TIME + ONE_HOURS)):
-            end_time += (LUNCH_TIME + ONE_HOURS - current_time)
-        if (end_time >= DINNER_TIME) and (current_time < DINNER_TIME):
+        if (end_time >= DINNER_TIME) and (start_time < DINNER_TIME):
             end_time += ONE_HOURS
-        elif (end_time >= DINNER_TIME) and (current_time > DINNER_TIME) and (current_time < (DINNER_TIME + ONE_HOURS)):
-            end_time += (DINNER_TIME + ONE_HOURS - current_time)
 
     if finish_time is not None: # 퇴근함
         finish_h, finish_m = split_timedelta(finish_time)
