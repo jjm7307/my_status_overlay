@@ -242,8 +242,8 @@ def update_labels():
                 label_info_01.config(text="")
                 label_info_02.config(text="")
             
-            files = glob.glob(FILE_PATH)
-            for file in files:
+            files = sorted(glob.glob(FILE_PATH))
+            for file in files[:-1]:
                 try:
                     os.remove(file)
                 except Exception as e:
