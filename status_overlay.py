@@ -173,10 +173,10 @@ def get_status_and_times():
     for idx in range(day_start, day_end):
         item = contents[idx]
         if (f"{yesterday:02d}" == item):
-            if (len(contents[idx+2]) == 2):
-                prev_work = False
-            else:
+            if "출근" in contents[idx+2]:
                 prev_work = True
+            else:
+                prev_work = False
 
     if today_time is None:
         real_time = remain_time
