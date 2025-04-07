@@ -5,9 +5,9 @@
 - 현재 출근 상태 및 잔여 복무시간을 모니터에 표기해주는 프로그램으로 3개로 나누어져서 구성됨
 - `Auto Refresh Plus | Page Monitor`
   -  Chrome 웹 스토어에서 설치 가능
-  -  KRP 홈페이지를 주기적으로 새로고침하면서 로그아웃을 방지함
+  -  홈페이지를 주기적으로 새로고침하면서 로그아웃을 방지함
 - `Auto Save Page Content`
-  -  KRP 홈페이지가 새로고침 될 때마다 페이지의 내용을 `page_content_*.json`으로 다운로드함
+  -  홈페이지가 새로고침 될 때마다 페이지의 내용을 `page_content_*.json`으로 다운로드함
 - `status_overlay.exe`
   -  다운로드 폴더에 있는 `page_content_*.json`을 읽고 정보를 화면에 띄움
 
