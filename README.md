@@ -1,4 +1,4 @@
-# KRP 출근 상태 오버레이
+# 출근 상태 오버레이
 ![image](https://github.com/user-attachments/assets/5e42b840-143d-4f01-8d44-e5f66af0d2c3)
 
 ## 프로그램 소개
